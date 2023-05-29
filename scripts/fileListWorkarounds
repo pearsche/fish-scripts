@@ -1,0 +1,15 @@
+#!/usr/bin/env fish
+
+	set -l options 'deleteLastLine' 'delete1stLine'
+	argparse $options -- $argv
+	set -l inputf $argv[1]
+	set -e argv[1]
+
+	if test -n "$_flag_deleteLastLine"
+		sed -i 1d $inputf # delete "."
+	end
+
+	if test -n "$_flag_delete1stLine"
+		sed -i \$d $inputf # delete last line
+	end
+	

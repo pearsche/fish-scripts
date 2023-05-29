@@ -1,0 +1,19 @@
+#!/usr/bin/env fish
+set -l options 'threads=?' 'extraArgs=?'
+# Need to do it so that I don't need fileFormat anymore
+argparse $options -- $argv
+
+if test -z "$_flag_threads"
+	set threads (nproc)
+else 
+	set threads $_flag_threads
+end
+
+splitFilelist --folders=$threads --mode=move
+
+# Now, the actual operation
+
+while test $threads -gt 0 # actual compression process
+	find $threads/ -name \*.\* -execdir optimize-media --$_flag_extraArgs --quiet {} \; &
+	set threads (math $threads - 1)
+end

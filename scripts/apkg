@@ -1,0 +1,95 @@
+#!/usr/bin/env fish
+	set -l argoptions 'savelog' 'install' 'onlytarget' 'deps' 'local' 'reinstall'
+	argparse $argoptions -- $argv
+	set action $argv[1]
+	set -e argv[1] # Delete the action from the argument list
+	
+	if which unbuffer > /dev/null 2>&1
+		set colorOutputWorkaround unbuffer \-p # the usage of unbuffer hides stdin input, which is an issue at the moment
+	else
+		echo "Installing 'expect' for the unbuffer command, needed to have color output saved in log files"
+		set action install
+		set -p argv expect
+		set -p argv rebuild-detector
+	end
+
+	set packageList $argv
+
+	switch $action
+		case install
+			set cmd paru -S $packageList
+			set numPackages (count $packageList)
+			if test -n "$_flag_deps"
+				set cmd $cmd --asdeps
+			end
+			if test -z "$_flag_reinstall"
+				set cmd $cmd --needed
+			end
+
+			# While it sorta works, it takes too long, and, it picks packages I'd like to avoid
+			# Too high level perhaps, might create my own pacman + aur wrapper (by forking paru) or contributing the thing to paru
+			#while test $numPackages -gt 0
+			#	#echo $numPackages
+			#	#echo WE ARE STUCKA HERE
+			#	#echo $packageList[$numPackages]
+			#	set optPackagesToAdd (apkg packageinfo $packageList[$numPackages] | sed -n '/Optional Deps/,/Conflicts With/p' | sed \$d | sed "s/Optional Deps   : //" | sed "s/\s*//g" | sed "s/:.*\$//g")
+			#	if test "$optPackagesToAdd" != None
+			#		set optDepPackagesList $optPackagesToAdd $optDepPackagesList
+			#	end
+			#	#echo exiting while numpackages loop
+			#	#echo $optPackagesToAdd
+			#	set numPackages (math $numPackages - 1)
+			#end
+			#if test -n "$optPackagesToAdd"
+			#	apkg install --deps $optDepPackagesList
+			#end
+		case upgrade # Need to also install optional dependencies for upgrades!
+			# Workaround here, for some reason $packageList despite being unset, still gets added like if it did exist.
+			set cmd paru
+			if test -n "$packageList"
+				set cmd $cmd $packageList
+			end
+			if test -n "$_flag_savelog"
+				set logName $action-(date +%d-%m-%y-%H:%M)
+				set cmd $colorOutputWorkaround $cmd
+			end
+		case search
+			if test -n "$_flag_install"
+				set cmd paru
+			else
+				set cmd paru -Ss
+			end
+			set cmd $cmd $packageList
+		case packageinfo
+			if test -n "$_flag_local"
+				set cmd paru -Qi
+			else
+				set cmd paru -Si
+			end
+			set cmd $cmd $packageList
+		case remove
+			if test -n "$_flag_onlytarget"
+				set cmd paru -R
+			else
+				set cmd paru -Rsc
+			end
+			set cmd $cmd $packageList
+		case checkupgrade
+			set cmd paru -Qu
+		end
+	
+	# IDK how to escape the piping.
+	if test $action = upgrade
+		$cmd | tee $logName
+	else
+		$cmd
+	end
+	echo "Checking if packages need to be rebuilt"
+
+	set pkgsToRebuild (checkrebuild | sed "s/foreign //g" | tr '\n' ' ')
+
+	if test -z $pkgsToRebuild
+		echo "No packages to rebuild."
+	else
+		apkg install --reinstall $pkgsToRebuild
+	end

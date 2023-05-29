@@ -1,0 +1,71 @@
+#!/usr/bin/env fish
+
+	set -l options 'help' 'folders=?' 'recursive' 'mode=' 'destinationFolder=?' 'fileFormat=?'
+	argparse -n splitFilelist $options -- $argv
+
+	if test -z "$_flag_recursive"
+		set findCMD find . -maxdepth 1 -fprint fileList.tmp
+	else 
+		set findCMD find . -fprint fileList.tmp
+	end
+
+	if test -n "$_flag_fileformat"
+		set findCMD $findCMD -name \*.$_flag_fileFormat
+		set fileListWorkaroundsCMD fileListWorkarounds --delete1stLine fileList.tmp
+	else
+		set fileListWorkaroundsCMD fileListWorkarounds --delete1stLine --deleteLastLine fileList.tmp
+	end
+
+
+	switch $_flag_mode
+		case copy
+			set mode "cp"
+		case move
+			set mode "mv"
+	end
+
+	$findCMD
+	$fileListWorkaroundsCMD
+	
+	if test -n "$folders" # numFolders to use
+		set numFolders $folders
+	else
+		set folders (nproc)
+		set numFolders $folders
+	end
+
+	if test -n "$_flag_destinationFolder"
+		set destinationFolder $_flag_destinationFolder
+		mkdir -p $destinationFolder
+	else
+		set destinationFolder $PWD
+	end
+
+	set numberFiles (cat fileList.tmp | wc -l)
+	set filesPerFolder (math -s 0 $numberFiles / $numFolders)
+	set extraFilesForLastFolder (math $numberFiles % $numFolders)
+	
+	while [ $numFolders -gt 0 ] # create le folders according to le numFolders
+		mkdir -p $numFolders
+		set numFolders (math $numFolders - 1)
+	end
+	
+	set fileCounter 1
+	set folderCounter 1
+	
+	while [ $folderCounter -le $folders ] # copying files to the numbered folders
+		while [ $fileCounter -le (math $filesPerFolder x $folderCounter) ]
+			$mode (sed -n $fileCounter\P fileList.tmp) $destinationFolder/$folderCounter/
+			set fileCounter (math $fileCounter + 1)
+		end
+		if [ $folderCounter -eq $folders ]
+			set filesPerFolder (math $filesPerFolder x $folderCounter + $extraFilesForLastFolder)
+			while [ $fileCounter -le $filesPerFolder ]
+				$mode (sed -n $fileCounter\P fileList.tmp) $destinationFolder/$folderCounter/
+				set fileCounter (math $fileCounter + 1)
+			end
+		end
+	set folderCounter (math $folderCounter + 1)
+	end
+
+	find . -name fileList.tmp -delete

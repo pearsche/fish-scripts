@@ -1,0 +1,38 @@
+#!/usr/bin/env fish
+
+	set -l options 'targetHeight=?' 'targetWidth=?' 
+	argparse $options -- $argv
+	set inputf $argv[1]
+	set -e argv
+	
+	set inputFilename (string split --right --max 1 \. $inputf)
+
+	set currentImageWidth (magick identify -format "%w" $inputFilename[1].$inputFilename[2])
+	set currentImageHeight (magick identify -format "%h" $inputFilename[1].$inputFilename[2])
+	
+	if test -z "$_flag_targetHeight"
+		set _flag_targetHeight 4000
+	end
+	
+	if test -z "$_flag_targetWidth"
+		set _flag_targetWidth 4000
+	end
+
+	set widthRatio (math -s 0 $_flag_targetWidth / $currentImageWidth)
+	set heightRatio (math -s 0 $_flag_targetHeight / $currentImageHeight)
+	set upscaleRatio $widthRatio
+	
+	if test $heightRatio -gt $upscaleRatio
+		set upscaleRatio $heightRatio
+	end
+
+	set adjusterValue 2
+	set currentRatioTest 2
+	while test $adjusterValue -gt 1
+		set adjusterValue (math -s 0 $upscaleRatio / $currentRatioTest)
+		set currentRatioTest (math -s 0 $currentRatioTest x 2)
+	end
+	
+	# https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/issues/19#issuecomment-1410882203
+	upscale-waifu --upscaleRatio=$upscaleRatio --outputFormat=jpg $inputFilename[1].$inputFilename[2] $inputFilename[1]\-upscaled.jpg
+	#end

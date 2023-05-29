@@ -1,0 +1,67 @@
+#!/usr/bin/env fish
+set -l options 'verbose' 'IECunits'
+
+argparse $options -- $argv
+
+if test $USER != root
+	echo "Elevating privileges to be able to get some values."
+	sudo -v
+	if test $status -ne 0
+		echo "Failed to elevate privileges."
+		return 1
+	end
+end
+
+if test -n "$_flag_IECunits"
+	set unit iec-i
+else
+	set unit si
+end
+
+set ENABLED (cat /sys/module/zswap/parameters/enabled)
+set COMPRESSOR (cat /sys/module/zswap/parameters/compressor)
+set ZPOOL (cat /sys/module/zswap/parameters/zpool)
+set PAGE_SIZE (getconf PAGE_SIZE)
+set SAME_FILLED_PAGES (sudo cat /sys/kernel/debug/zswap/same_filled_pages)
+set PAGES_SENT_TO_DISK (sudo cat /sys/kernel/debug/zswap/written_back_pages)
+set STORED_PAGES (sudo cat /sys/kernel/debug/zswap/stored_pages)
+set POOL_TOTAL_SIZE (sudo cat /sys/kernel/debug/zswap/pool_total_size)
+
+set POOL_SIZE (numfmt --to=$unit $POOL_TOTAL_SIZE)
+
+
+
+if test $POOL_TOTAL_SIZE -eq 0
+	set DECOMPRESSED_SIZE "N/A"
+	set RATIO "N/A"
+	set SAME_FILLED_PAGES "N/A"
+	set PAGES_SENT_TO_DISK "N/A"
+	set SENT_TO_DISK "N/A"
+	set DEDUPPED_PAGES "N/A"
+else
+	set DECOMPRESSED_SIZE (echo "$STORED_PAGES * $PAGE_SIZE" | bc | numfmt --to=$unit)
+	set RATIO (echo "scale=3; $STORED_PAGES * $PAGE_SIZE / $POOL_TOTAL_SIZE" | bc -l)
+	set DEDUPPED_PAGES (echo "$SAME_FILLED_PAGES * $PAGE_SIZE" | bc | numfmt --to=$unit)
+	set SENT_TO_DISK (echo "$PAGES_SENT_TO_DISK * $PAGE_SIZE" | bc | numfmt --to=$unit)
+end
+
+echo "Zswap enabled:            $ENABLED"
+echo "Compressor:               $COMPRESSOR"
+echo "Zpool:                    $ZPOOL"
+echo
+echo "Page size:                $PAGE_SIZE"
+echo "Stored pages:             $STORED_PAGES"
+echo "Pool size:                $POOL_SIZE"
+echo "Decompressed size:        $DECOMPRESSED_SIZE"
+echo "Page compression ratio:   $RATIO"
+echo "Pages deduplicated:       $DEDUPPED_PAGES"
+echo "Pages sent to disk:       $SENT_TO_DISK"
+
+if test -n "$_flag_verbose"
+	echo
+	sudo grep -R . /sys/kernel/debug/zswap/
+	grep -R . /sys/module/zswap/parameters/
+end
+
+# Remove the cached sudo credentials
+sudo -K 

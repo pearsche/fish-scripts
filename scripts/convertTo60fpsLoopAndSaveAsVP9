@@ -1,0 +1,21 @@
+#!/usr/bin/env fish
+set -l options 'loops=?' 'fileFormat=?'
+argparse $options -- $argv
+
+## splitFilelist --mode=move
+
+## set threads (nproc)
+set fileFormat $_flag_fileFormat
+
+if test -z "_flag_loops"
+	set loops 1
+else
+	set loops $_flag_loops
+end
+
+find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.$fileFormat -c copy {}.60fps+looped-$loops-times.$fileFormat \; -execdir optimize-media {}.60fps+looped-$loops-times.$fileFormat \;
+
+#while test $threads -gt 0 # actual compression process
+	#find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.$fileFormat -c copy {}.60fps+looped-$loops-times.$fileFormat \; -execdir optimize-media {}.60fps+looped-$loops-times.$fileFormat \; &
+	#set threads (math $threads - 1)
+#end

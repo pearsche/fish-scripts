@@ -1,0 +1,13 @@
+#!/usr/bin/env -S fontforge -lang=ff -script 
+
+Open($1)
+SetTTFName(0x409,13,"")
+Select(0u2600,0u26ff)
+DetachAndRemoveGlyphs()
+Generate($1)
+Select(0u2700,0u27bf)
+DetachAndRemoveGlyphs()
+Generate($1)
+Select(0u10000,0u1fffd)
+DetachAndRemoveGlyphs()
+Generate($1)

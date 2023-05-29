@@ -1,0 +1,90 @@
+#!/usr/bin/env fish
+#TODO: Make it more elegant
+set -l options 'checkchanges' 'user' 'system' 'complete' 'switch' 'updatechannels' 'onlyupdatechannels'
+argparse $options -- $argv
+
+
+if test -n "$_flag_system"
+	set levelOfChange 1
+end
+
+if test -n "$_flag_user"
+	set levelOfChange 2
+end
+
+if test -n "$_flag_complete" # this can probably be written better
+	set levelOfChange 3
+end
+
+if test -n "$_flag_updatechannels"
+	switch $levelOfChange
+	case 1
+		colored-text --color=green "Updating system channels."
+		sudo nix-channel --update
+		colored-text --color=green "Updated system channels."
+	case 2
+		colored-text --color=yellow "Updating user channels."
+		nix-channel --update
+		colored-text --color=yellow "Updated user channels"
+	case 3
+		update-nixos --system $_flag_switch --updatechannels --onlyupdatechannels
+		update-nixos --user $_flag_switch --updatechannels --onlyupdatechannels
+	end
+end
+
+if test -z "$_flag_onlyupdatechannels"
+	switch $levelOfChange
+
+		case 1
+			if test -n "$_flag_checkchanges"
+				colored-text --color=yellow "Checking for system updates."
+				nixos-rebuild dry-build
+				if test $status -ne 0
+					colored-text --color=red "Checking for system updates failed."
+				else
+					colored-text --color=green "Successfully checked for system updates."
+				end
+			else
+				if test -n "$_flag_switch"
+					colored-text --color=yellow "Updating system configuration."
+					sudo nixos-rebuild switch
+					if test $status -ne 0
+						colored-text --color=red "System configuration update failed."
+					else
+						colored-text --color=green "Updated system configuration and switched to it."
+					end
+				else
+					sudo nixos-rebuild boot
+					if test $status -ne 0
+						colored-text --color=red "System configuration update failed."
+					else
+						colored-text --color=green "Updated system configuration, system will switch to it on reboot."
+					end
+				end
+			end
+			
+		case 2
+			if test -n "$_flag_checkchanges"
+				colored-text --color=yellow "Checking what changes would be done to the home-manager configuration."
+				home-manager switch --dry-run
+				if test $status -ne 0
+					colored-text --color=red "Checking for home-manager updated failed"
+				else
+					colored-text --color=green "Successfully checked for home-manager updates."
+				end
+			else
+				colored-text --color=yellow "Updating home-manager configuration."
+				home-manager switch
+				if test $status -ne 0
+					colored-text --color=red "Home-manager update failed."
+				else
+					colored-text --color=green "Updated home-manager configuration and switched to it."
+				end
+			end
+		
+		case 3
+			# Update system first, home-manager user second. This works around the sudo timeout in case h-m upgrading takes too long.
+			update-nixos --system $_flag_switch $_flag_checkchanges
+			update-nixos --user $_flag_switch $_flag_checkchanges
+	end
+end

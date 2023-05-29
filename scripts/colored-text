@@ -1,0 +1,9 @@
+#!/usr/bin/env fish
+
+set -l options 'color=?'
+
+argparse $options -- $argv
+
+set_color $_flag_color
+echo $argv
+set_color normal
