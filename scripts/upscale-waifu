@@ -17,7 +17,9 @@
 	#end
 
 	if test -z "$_flag_upscaleRatio"
-		set _flag_upscaleRatio 2 # User probably just wants to double size, [1 to 32, powers of 2]
+		# https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/issues/38
+		# TODO: find a better scaler
+		set _flag_upscaleRatio 4 # User probably just wants to double size, [1 to 32, powers of 2]
 	end
 	
 	if test -z "$_flag_outputFormat"

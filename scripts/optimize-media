@@ -1,5 +1,5 @@
 #!/usr/bin/env fish
-set -l options 'lossless' 'toSend' 'quiet' 'anime' 'gpu' 'showCommand' 'keepAudioBitrate' 'skipMetadataUpdate'
+set -l options 'lossless' 'toSend' 'quiet' 'anime' 'gpu' 'showCommand' 'keepAudioBitrate' 'skipMetadataHandling' 'videoQuality=' 'audioBitrate='
 
 argparse $options -- $argv
 
@@ -20,7 +20,7 @@ switch $inputFilename[2]
 		if test $inputFilename[2] != wav
 			set needsConvert 1
 		end
-	case mkv or mp4 or webm
+	case mkv or mp4 or webm or gif
 		set fileFormat video
 	case png or jpg or jpeg or webp or avif
 		set fileFormat image
@@ -145,33 +145,44 @@ switch $fileFormat
 				set bitrateField "bit_rate="
 		end
 
+		
+
 		# Some mkv files don't have proper tags for bitrate and such, so fix them.
 		# Information gotten from https://www.reddit.com/r/ffmpeg/comments/nq5s39/is_there_any_easy_way_to_get_values_of_bitrate/h0c60d9/
 		# Was thinking of removing it, but it'd be better to just add a flag to skip this if necessary. The metadata that could be updated by that tool could be useful in ways I don't know yet.
 		
-		if test $inputFilename[2] = "mkv" -o $inputFilename[2] = "webm" -a -z "$_flag_skipMetadataUpdate"
-			mkvpropedit $converteeFilename --add-track-statistics-tags > /dev/null 2>&1
-			if test $status -ne 0
-				echo "File is corrupted and therefore neither video or audio bitrate values can be determined, and only CPU encoding will be done."
-				set corruptedFile 1
-			else
-				set corruptedFile 0
-			end
-		else
-			# TODO: Check if this is fine, not properly tested more or less
-			set corruptedFile 0
-		end
+		#if test -z "$_flag_skipMetadataHandling"
+		#	if test \( $inputFilename[2] = "mkv" -o $inputFilename[2] = "webm" \)
+		#		mkvpropedit $converteeFilename --add-track-statistics-tags > /dev/null 2>&1
+		#		if test $status -ne 0
+		#			echo "File is corrupted and therefore neither video or audio bitrate values can be determined."
+		#			set corruptedFile 1
+		#		else
+		#			set corruptedFile 0
+		#		end
+		#	else
+		#		# TODO: Check if this is fine, not properly tested more or less
+		#		set corruptedFile 0
+		#	end
+		#end
 		
-		if test -n "$_flag_gpu" -a $corruptedFile = 0
+		if test -n "$_flag_gpu"
 			set videoCodec vp9
 		else
 			set videoCodec av1
 		end
+		
 		set outputFilename $inputFilename[1].$videoCodec
 		set outputFormat mkv
 
 		# Video area
 		
+		# Get codec data
+		# This is to check if video is h264 10bit or gif (can't decode)
+		set originalCodec (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep "codec_name=" | sed "s/codec_name=//g")
+		set profile (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep "profile=" | sed "s/profile=//g")
+
+		echo $originalCodec
 		# Use VQ image tuning instead of PSNR in case the user says that the source is anime
 		if test -n "$_flag_anime" 
 			set videoTune 0
@@ -179,27 +190,27 @@ switch $fileFormat
 			set videoTune 1
 		end
 
-		if test $corruptedFile = 0 -o -n "$_flag_gpu"
-			set videoBitrate (ffprobe $inputFilename[1].$inputFilename[2] -select_streams v:0 -show_streams 2>/dev/null | grep --max-count=1 $bitrateField | sed "s/$bitrateField//g")
-			set videoBitrate (math -s 0 $videoBitrate / 1000)
-			set gpuTargetBitrate (math -s 0 $videoBitrate \* 3 / 4)
-		end
-
-		# TODO: Also change preset level in the future, but that requires a much better CPU.
-		if test -z "$_flag_gpu" -o $corruptedFile = 1
-			if test $videoBitrate -le 2500
-				set qualityLevel 30
+	# Video quality/bitrate setting
+	# Not gonna use bitrate at all.
+		#if test "$corruptedFile" = 0 -a "$originalCodec" != gif
+		if test "$originalCodec" != gif
+			if test -n "$_flag_videoQuality"
+				set qualityLevel $_flag_videoQuality
 			else
-				if test $videoBitrate -gt 2500 -a $videoBitrate -lt 12500
-					set qualityLevel 35
+				set videoBitrate (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep --max-count=1 $bitrateField | sed "s/$bitrateField//g")
+				if test -z "$videoBitrate"
+					# Default quality level, in case videoBitrate can't be determined for x y z reason
+					set qualityLevel 20
+					echo "No video bitrate found for automatic quality level setting."
 				else
-					if test $videoBitrate -gt 12500 -a $videoBitrate -lt 62500
-						set qualityLevel 40 # Needs testing
-					end
+					set videoBitrate (math -s 0 $videoBitrate / 1000)
+					set qualityLevel (math -s 0 $qualityLevel + $videoBitrate / 1000)
 				end
 			end
+
+			echo "Set video quality level: " $qualityLevel
 		end
-		
+
 		# Get the video framerate
 		set videoFramerate (string split '/' (ffprobe $inputFilename[1].$inputFilename[2] -select_streams v:0 -show_streams 2>/dev/null | grep avg_frame_rate= | sed "s/avg_frame_rate=//g"))
 
@@ -208,7 +219,7 @@ switch $fileFormat
 			# round value
 			set videoFramerate[1] (math round $videoFramerate[1])
 			set videoFramerate (math -s 0 $videoFramerate[1] / $videoFramerate[2])
-			set keyframeArgs -g (math -s 0 $videoFramerate \* 10) -idr_interval:v (math -s 0 $videoFramerate \* 5)
+			set keyframeArgs -g (math -s 0 $videoFramerate \* 4) -idr_interval:v (math -s 0 $videoFramerate \* 2) -keyint_min (math -s 0 $videoFramerate \* 1)
 		end
 
 		# TODO: Find a better way to handle colors.
@@ -224,24 +235,9 @@ switch $fileFormat
 
 		set colorRange (ffprobe $inputFilename[1].$inputFilename[2] -select_streams v:0 -show_streams 2>/dev/null | grep "color_range=" | sed "s/color_range=//g")
 
-		set colorPrimaries (ffprobe $inputFilename[1].$inputFilename[2] -select_streams v:0 -show_streams 2>/dev/null | grep "color_primaries=" | sed "s/color_primaries=//g")
-
 		set chromaLocation (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep "chroma_location=" | sed "s/chroma_location=//g")
 
-		#set colorArgs -colorspace $colorSpace -color_range $colorRange -color_trc $colorTransfer -color_primaries $colorPrimaries -chroma_sample_location:v $chromaLocation
-
-		#set videoFilter -vf tonemap_vaapi=format=p010:matrix=$colorSpace:primaries=$colorPrimaries:transfer=$colorTransfer
-
-		#echo $videoFilter
-		#set chromaSample -chroma_sample_location:v $chromaLocation
-
-		# Check if video is h264 10bit (can't decode)
-		set originalCodec (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep "codec_name=" | sed "s/codec_name=//g")
-		set profile (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep "profile=" | sed "s/profile=//g")
-		echo $originalCodec
-		echo $profile[1]
-
-		if test "$originalCodec" = h264 -a "$profile[1]" = "High 10" -o "$profile[1]" = "High 4:4:4 Predictive"
+		if test "$originalCodec" = h264 -a "$profile[1]" = "High 10" -o "$profile[1]" = "High 4:4:4 Predictive" -o "$originalCodec" = gif
 			set videoFilter
 		else
 			if test -z "$_flag_gpu"
@@ -256,8 +252,6 @@ switch $fileFormat
 
 		# See if there are multiple audio streams
 		set audioStreams (ffprobe -show_streams -select_streams a $converteeFilename | grep index | wc -l)
-		echo sneed1
-		echo $audioStreams
 		# Use libopus as the global audio encoder
 		set audioFlags -c:a libopus
 		# Handle the multiple audio streams
@@ -267,9 +261,20 @@ switch $fileFormat
 			# https://www.reddit.com/r/ffmpeg/comments/v4s61h/correctly_mapping_51_to_opus/
 			set channel_layout (ffprobe $converteeFilename -select_streams a:$streamsHelper -show_streams 2>/dev/null | grep channel_layout= | sed "s/channel_layout=//g")
 			
-			# Get original audio bitrate
-			set audioBitrate (ffprobe $inputFilename[1].$inputFilename[2] -select_streams a:$streamsHelper -show_streams 2>/dev/null | grep --max-count=1 $bitrateField | sed "s/$bitrateField//g")
-			set audioBitrate (math -s 0 $audioBitrate / 1000)
+			
+			if test -n "$_flag_audioBitrate"
+				set audioBitrate $_flag_audioBitrate
+			else
+				# Get original audio bitrate
+				set audioBitrate (ffprobe $converteeFilename -select_streams a:$streamsHelper -show_streams 2>/dev/null | grep --max-count=1 $bitrateField | sed "s/$bitrateField//g")
+				if test -z "$audioBitrate"
+					set audioBitrate 320
+					echo "No audio bitrate found for automatic audio bitrate setting."
+				else
+					set audioBitrate (math -s 0 $audioBitrate / 1000)
+				end
+			end
+			echo "Setting audio bitrate to: " $audioBitrate
 
 			switch $channel_layout
 				case "5.1(side)" or "5.1(rear)" or "5.1"
@@ -299,18 +304,19 @@ switch $fileFormat
 				set audioFlags[-1] $audioBitrate\k
 			end
 			set streamsHelper (math $streamsHelper + 1)
+
+			if test "$originalCodec" = gif
+				set audioFlags -an
+			end
 		end
 
 		# End of audio area
 
-		if test -n "$_flag_gpu" -a "$corruptedFile" -ne 1
+		if test -n "$_flag_gpu"
 			# TODO: Some videos crash i915
 			# TODO: Recognize if some videos don't have audio or have silent audio and if so, spit out a video without audio
 			# This is the command for VP9 VAAPI
-			# b-frames (and the needed bitstream filters) mess with rate control.
-			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 -c:v vp9_vaapi $videoFilter $keyframeArgs -async_depth 4 -rc_mode:v CQP -global_quality:v 25 -compression_level:v 1 -bf:v 4 -bsf:v vp9_raw_reorder $audioFlags -c:s copy $outputFilename.$outputFormat
-
-		
+			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 -c:v vp9_vaapi $videoFilter $keyframeArgs -async_depth 4 -rc_mode:v CQP -global_quality:v $qualityLevel -compression_level:v 7 -low_power 0 -loop_filter_level:v 35 -loop_filter_sharpness:v 10 -bf:v 3 -bsf:v vp9_raw_reorder $audioFlags -c:s copy $outputFilename.$outputFormat		
 		else
 			# AV1 CPU encoding, using SVT-AV1
 			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -threads auto -strict -2 -i $inputFilename[1].$inputFilename[2] -map 0 $videoFilter -pix_fmt yuv420p10le -c:v libsvtav1 -crf $qualityLevel $keyframeArgs -svtav1-params tune=$videoTune:tile-columns=2:tile-rows=2:preset=7 $audioFlags -c:s copy -dn "$outputFilename.$outputFormat"
@@ -336,23 +342,23 @@ switch $fileFormat
 
 		if test -n "$_flag_anime"
 			conditionalAnimeUpscale $inputFilename[1].$inputFilename[2]
-			set inputFilename $inputFilename[1]\-upscaled.png
+			set converteeFilename $inputFilename[1]\-upscaled.png
 			set outputFilename $inputFilename[1]\-upscaled
 		end
 		
 		if test -n "$needsConvert"
 			echo $needsConvert
 			ffmpeg $quietArgs -i $inputFilename[1].$inputFilename[2] $inputFilename[1].tmp.png # create temporal png image
-			set inputFilename $inputFilename[1].tmp.png # set name to temporal png image
+			set converteeFilename $inputFilename[1].tmp.png # set name to temporal png image
 			# set outputFilename $outputFilename.tmp # append tmp outputFilename to distinguish it from the original image
 		end
 
 		# Actual encoding
 		# Tested with a big image, and the defaults seem fine.
-		avifenc --jobs all --speed 0 --depth 10 $inputFilename[1].$inputFilename[2] $outputFilename.avif 
+		avifenc --jobs all --speed 0 --depth 10 --autotiling $converteeFilename $outputFilename.avif 
 		
 		# Delete the temporal png image
 		if test -n "$needsConvert"
-			rm $inputFilename 
+			rm $converteeFilename 
 		end
 end
