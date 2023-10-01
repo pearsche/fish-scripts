@@ -1,169 +1,217 @@
 #!/usr/bin/env fish
-	set -l options 'prompt'
+	set -l options 'prompt' 'skipSettingColors' 'darkMode'
 	argparse $options -- $argv
 	
 	set selectedColorscheme $argv[1]
 
-	switch $selectedColorscheme
-		case material-dark # https://github.com/carloscuesta/materialshell
-			set colorscheme "Material Dark"
-			set black 252525
-			set red FF443E
-			set green C3D82C
-			set yellow FFC135
-			set blue 42A5F5
-			set magenta D81B60
-			set cyan 00ACC1
-			set white F5F5F5
-			set text A1B0B8
-			set background 151515
-			set wrkbackground 656565
+	if test -z "$_flag_skipSettingColors"
+		switch $selectedColorscheme
+			case material-dark # https://github.com/carloscuesta/materialshell
+				set colorscheme "Material Dark"
+				set black 252525
+				set red FF443E
+				set green C3D82C
+				set yellow FFC135
+				set blue 42A5F5
+				set magenta D81B60
+				set cyan 00ACC1
+				set white F5F5F5
+				set text A1B0B8
+				set background 151515
+				set wrkbackground 656565
 
-		case gruvbox-material-light-medium # https://gist.github.com/sainnhe/ad5cbc4f05c4ced83f80e54d9a75d22f#file-gruvbox-material-alacritty-yml-L91
-			set colorscheme "Gruvbox Material Light Medium"
-			set black 654735
-			set red c14a4a
-			set green 6c782e
-			set yellow b47109
-			set blue 45707a
-			set magenta 945e80
-			set cyan 4c7a5d
-			set white f2e5bc
-			set text 654735
-			set background fbf1c7
-			set wrkbackground B46D00
-		
-		case gruvbox-material-dark-hard # https://gist.github.com/sainnhe/ad5cbc4f05c4ced83f80e54d9a75d22f#file-gruvbox-material-alacritty-yml-L91
-			set colorscheme "Gruvbox Material Dark Hard"
-			set black 32302f
-			set red ea6962
-			set green a9b665
-			set yellow d8a657
-			set blue 7daea3
-			set magenta d3869b
-			set cyan 89b482
-			set white d4be98
-			set text d4be98
-			set background 1d2021
-			set wrkbackground B46D00
-		case gruvbox-material-light-hard # https://gist.github.com/sainnhe/ad5cbc4f05c4ced83f80e54d9a75d22f#file-gruvbox-material-alacritty-yml-L69
-			set colorscheme "Gruvbox Material Light Hard"
-			set black 654735
-			set red c14a4a
-			set green 6c782e
-			set yellow b47109
-			set blue 45707a
-			set magenta 945e80
-			set cyan 4c7a5d
-			set white eee0b7
-			set text 654735
-			set background f9f5d7
-			set wrkbackground B46D00
-		case github-light # https://github.com/primer/github-vscode-theme
-			set colorscheme "Github Light"
-			set black 24292e
-			set brblack 959da5
-			set red d73a49
-			set brred cb2431
-			set green 28a745
-			set brgreen 22863a
-			set yellow dbab09
-			set bryellow b08800
-			set blue 0366d6
-			set brblue 005cc5
-			set magenta 5a32a3
-			set brmagenta 5a32a3
-			set cyan 1b7c83
-			set brcyan 3192aa
-			set white 6a737d
-			set brwhite d1d5da
-			set text 586069
-			set background F6F8FA
-			set wrkbackground $brblack
-			set cursor D1D5DA
-			set cursorbackground 005CC5
-			set highlightText F6F8FA
-			set highlightBackground E5EEF7
-		
-		case tokyo-night-storm # https://github.com/enkia/tokyo-night-vscode-theme
-			set colorscheme "Tokyo Night Storm"
-			set black 414868
-			set red F7768E
-			set green 73DACA
-			set yellow E0AF68
-			set blue 7AA2F7
-			set magenta BB9AF7
-			set cyan 7DCFFF
-			set white C0CAF5
-			set text A9B1D6
-			set background 24283B
-			set wrkbackground $white
-			set pagerHighlight $background
-		case adwaita-dark # 
-			set colorscheme "Adwaita Dark"
-			set black 241F31
-			set red C01C28
-			set green 2EC27E
-			set yellow F5C211
-			set blue 1E78E4
-			set magenta 9841BB
-			set cyan 0AB9DC
-			set white BEBDBA
-			set text FFFFFF
-			set background 1E1E1E
-			set wrkbackground $white
-			set pagerHighlight $background
-		case adwaita-light # 
-			set colorscheme "Adwaita Light"
-			set black 241F31
-			set red C01C28
-			set green 2EC27E
-			set yellow F5C211
-			set blue 1E78E4
-			set magenta 9841BB
-			set cyan 0AB9DC
-			set white C0BFBC
-			set text 1E1E1E
-			set background FFFFFF
-			set wrkbackground $white
-			set pagerHighlight $background
+			case gruvbox-material-light-medium # https://gist.github.com/sainnhe/ad5cbc4f05c4ced83f80e54d9a75d22f#file-gruvbox-material-alacritty-yml-L91
+				set colorscheme "Gruvbox Material Light Medium"
+				set black 654735
+				set red c14a4a
+				set green 6c782e
+				set yellow b47109
+				set blue 45707a
+				set magenta 945e80
+				set cyan 4c7a5d
+				set white f2e5bc
+				set text 654735
+				set background fbf1c7
+				set wrkbackground B46D00
+			
+			case gruvbox-material-dark-hard # https://gist.github.com/sainnhe/ad5cbc4f05c4ced83f80e54d9a75d22f#file-gruvbox-material-alacritty-yml-L91
+				set colorscheme "Gruvbox Material Dark Hard"
+				set black 32302f
+				set red ea6962
+				set green a9b665
+				set yellow d8a657
+				set blue 7daea3
+				set magenta d3869b
+				set cyan 89b482
+				set white d4be98
+				set text d4be98
+				set background 1d2021
+				set wrkbackground B46D00
+			case gruvbox-material-light-hard # https://gist.github.com/sainnhe/ad5cbc4f05c4ced83f80e54d9a75d22f#file-gruvbox-material-alacritty-yml-L69
+				set colorscheme "Gruvbox Material Light Hard"
+				set black 654735
+				set red c14a4a
+				set green 6c782e
+				set yellow b47109
+				set blue 45707a
+				set magenta 945e80
+				set cyan 4c7a5d
+				set white eee0b7
+				set text 654735
+				set background f9f5d7
+				set wrkbackground B46D00
+			case github-light # https://github.com/primer/github-vscode-theme
+				set colorscheme "Github Light"
+				set black 24292e
+				set brblack 959da5
+				set red d73a49
+				set brred cb2431
+				set green 28a745
+				set brgreen 22863a
+				set yellow dbab09
+				set bryellow b08800
+				set blue 0366d6
+				set brblue 005cc5
+				set magenta 5a32a3
+				set brmagenta 5a32a3
+				set cyan 1b7c83
+				set brcyan 3192aa
+				set white 6a737d
+				set brwhite d1d5da
+				set text 586069
+				set background F6F8FA
+				set wrkbackground $brblack
+				set cursor D1D5DA
+				set cursorbackground 005CC5
+				set highlightText F6F8FA
+				set highlightBackground E5EEF7
+			
+			case tokyo-night-storm # https://github.com/enkia/tokyo-night-vscode-theme
+				set colorscheme "Tokyo Night Storm"
+				set black 414868
+				set red F7768E
+				set green 73DACA
+				set yellow E0AF68
+				set blue 7AA2F7
+				set magenta BB9AF7
+				set cyan 7DCFFF
+				set white C0CAF5
+				set text A9B1D6
+				set background 24283B
+				set wrkbackground $white
+				set pagerHighlight $background
+			case adwaita-dark # 
+				set colorscheme "Adwaita Dark"
+				set black 241F31
+				set red C01C28
+				set green 2EC27E
+				set yellow F5C211
+				set blue 1E78E4
+				set magenta 9841BB
+				set cyan 0AB9DC
+				set white BEBDBA
+				set text FFFFFF
+				set background 1E1E1E
+				set wrkbackground $white
+				set pagerHighlight $background
+			case adwaita-light # 
+				set colorscheme "Adwaita Light"
+				set black 241F31
+				set red C01C28
+				set green 2EC27E
+				set yellow F5C211
+				set blue 1E78E4
+				set magenta 9841BB
+				set cyan 0AB9DC
+				set white C0BFBC
+				set text 1E1E1E
+				set background FFFFFF
+				set wrkbackground $white
+				set pagerHighlight $background
+		end
 	end
 
 ## Set the colors
-set -U fish_color_normal $text
-set -U fish_color_autosuggestion $wrkbackground
-set -U fish_color_cancel $yellow
-set -U fish_color_command $green
-set -U fish_color_comment $cyan
-set -U fish_color_cwd $blue
-set -U fish_color_end $magenta
-set -U fish_color_error $red
-set -U fish_color_escape $white
-set -U fish_color_host $magenta
-set -U fish_color_host_remote $red
-set -U fish_color_keyword $yellow
-set -U fish_color_text $text
-set -U fish_color_operator $magenta
-set -U fish_color_option $blue
-set -U fish_color_param $text
-set -U fish_color_quote $blue
-set -U fish_color_redirection $cyan
-set -U fish_color_search_match $text
-set -U fish_color_selection $blue
-set -U fish_color_user $yellow
-set -U fish_pager_color_background --background=$background
-set -U fish_pager_color_completion $text
-set -U fish_pager_color_description $text
-set -U fish_pager_color_prefix $blue
-set -U fish_pager_color_progress $text
-set -U fish_pager_color_secondary_background --background=$background
-set -U fish_pager_color_secondary_completion $text
-set -U fish_pager_color_secondary_description $text
-set -U fish_pager_color_secondary_prefix $blue
-set -U fish_pager_color_selected_background --background=$text
-set -U fish_pager_color_selected_completion $pagerHighlight
-set -U fish_pager_color_selected_description $pagerHighlight
-set -U fish_pager_color_selected_prefix $pagerHighlight
+#set -U fish_color_normal $text
+#set -U fish_color_autosuggestion $wrkbackground
+#set -U fish_color_cancel $yellow
+#set -U fish_color_command $green
+#set -U fish_color_comment $cyan
+#set -U fish_color_cwd $blue
+#set -U fish_color_end $magenta
+#set -U fish_color_error $red
+#set -U fish_color_escape $white
+#set -U fish_color_host $red
+#set -U fish_color_host_remote $cyan
+#set -U fish_color_keyword $yellow
+#set -U fish_color_text $text
+#set -U fish_color_operator $magenta
+#set -U fish_color_option $blue
+#set -U fish_color_param $text
+#set -U fish_color_quote $blue
+#set -U fish_color_redirection $cyan
+#set -U fish_color_search_match $text
+#set -U fish_color_selection $blue
+#set -U fish_color_user $blue
+#set -U pearsche_fish_color_stack 
+#set -U fish_pager_color_background --background=$background
+#set -U fish_pager_color_completion $text
+#set -U fish_pager_color_description $text
+#set -U fish_pager_color_prefix $blue
+#set -U fish_pager_color_progress $text
+#set -U fish_pager_color_secondary_background --background=$background
+#set -U fish_pager_color_secondary_completion $text
+#set -U fish_pager_color_secondary_description $text
+#set -U fish_pager_color_secondary_prefix $blue
+#set -U fish_pager_color_selected_background --background=$text
+#set -U fish_pager_color_selected_completion $pagerHighlight
+#set -U fish_pager_color_selected_description $pagerHighlight
+#set -U fish_pager_color_selected_prefix $pagerHighlight
+
+
+if test -n "$_flag_darkMode" 
+	set pagerBackground 1E1E1E
+	set pagerSelectedBackground FFFFFF
+else
+	set pagerBackground FFFFFF
+	set pagerSelectedBackground 1E1E1E
+end
+
+set -U fish_color_normal normal
+set -U fish_color_autosuggestion white
+set -U fish_color_cancel yellow
+set -U fish_color_command green
+set -U fish_color_comment cyan
+set -U fish_color_cwd green
+set -U fish_color_end magenta
+set -U fish_color_error red
+set -U fish_color_escape white
+set -U fish_color_host red
+set -U fish_color_host_remote cyan
+set -U fish_color_keyword yellow
+set -U fish_color_text normal
+set -U fish_color_operator magenta
+set -U fish_color_option blue
+set -U fish_color_param normal
+set -U fish_color_quote blue
+set -U fish_color_redirection cyan
+set -U fish_color_search_match normalnormal
+set -U fish_color_selection blue
+set -U fish_color_user blue
+set -U pearsche_fish_color_stack magenta
+set -U fish_pager_color_background --background=$pagerBackground
+set -U fish_pager_color_completion normal
+set -U fish_pager_color_description normal
+set -U fish_pager_color_prefix blue
+set -U fish_pager_color_progress normal
+set -U fish_pager_color_secondary_background --background=$pagerBackground
+set -U fish_pager_color_secondary_completion normal
+set -U fish_pager_color_secondary_description normal
+set -U fish_pager_color_secondary_prefix blue
+set -U fish_pager_color_selected_background --background=$pagerSelectedBackground
+set -U fish_pager_color_selected_completion $pagerBackground
+set -U fish_pager_color_selected_description $pagerBackground
+set -U fish_pager_color_selected_prefix blue
 
 if test -z "$_flag_prompt"
 	echo Set $colorscheme as fish color scheme
