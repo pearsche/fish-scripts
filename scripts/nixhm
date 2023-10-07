@@ -6,12 +6,20 @@ argparse $flags -- $argv
 # argv[0] -> action
 
 switch "$argv[1]"
-	case "update"
-		if test -n "$_flag_complete"
-			nixhm update --user
-			nixhm update --system
+	case "changelog"
+		if test -n "$_flag_user"
+			nix profile diff-closures | tail
 		end
 
+		if test -n "$_flag_system"
+			nix profile diff-closures --profile /nix/var/nix/profiles/system | tail
+		end
+
+		if test -n "$_flag_complete"
+			nixhm changelog --user
+			nixhm changelog --system
+		end
+	case "update"
 		if test -n "$_flag_user"
 			#TODO: Turn this into an envvar
 			cd $HOME/.config/home-manager
@@ -21,7 +29,13 @@ switch "$argv[1]"
 			#TODO: Turn this into an envvar
 			cd $HOME/Documents/Programming/Repositories/pearsche-nixos-setup
 		end
-		nix flake update
+		if test -n "$_flag_complete"
+			nixhm update --user
+			nixhm update --system
+		else
+			nix flake update
+		end
+
 	case "upgrade"
 		if test -n "$_flag_complete"
 			nixhm upgrade --user

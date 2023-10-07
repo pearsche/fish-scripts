@@ -1,0 +1,25 @@
+#!/usr/bin/env fish
+
+set -l options 'lossless'
+
+argparse $options -- $argv
+
+# it can be:
+# video
+# music
+# general files
+
+# argv[1] -> type of file to download
+# argv[2] -> link of the download
+switch "$argv[1]"
+	case video
+		yt-dlp $argv[2]
+	case music
+		if test -n "$_flag_lossless"
+			yt-dlp -x --audio-format flac $argv[2]
+		else
+			yt-dlp -x $argv[2]
+		end
+	case general
+		aria2c -x 10 $argv[2]
+end
