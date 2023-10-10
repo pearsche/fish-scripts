@@ -1,0 +1,28 @@
+#!/usr/bin/env fish
+
+# Global counter
+
+# $argv[1] -> for whom the changelog is retrieved
+switch "$argv[1]"
+	case user
+		set text (nix profile diff-closures)
+	case system
+		set text (nix profile diff-closures --profile /nix/var/nix/profiles/system)
+end
+
+# Global counter
+set counter -1
+
+# Get line number where the last "*Version* X -> Y" is
+while test "$check" != "Version"
+	set check (echo $text[$counter] | grep -o Version)
+	if test "$check" != "Version"
+		set counter (math $counter - 1)
+	end
+end
+
+# Finally, print the result
+while test $counter -ne 0
+	echo $text[$counter]
+	set counter (math $counter + 1)
+end

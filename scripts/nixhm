@@ -8,11 +8,11 @@ argparse $flags -- $argv
 switch "$argv[1]"
 	case "changelog"
 		if test -n "$_flag_user"
-			nix profile diff-closures | tail
+			_nixhm_changelog user
 		end
 
 		if test -n "$_flag_system"
-			nix profile diff-closures --profile /nix/var/nix/profiles/system | tail
+			_nixhm_changelog system
 		end
 
 		if test -n "$_flag_complete"
