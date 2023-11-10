@@ -20,7 +20,7 @@ switch $inputFilename[2]
 		if test $inputFilename[2] != wav
 			set needsConvert 1
 		end
-	case mkv or mp4 or webm or gif
+	case mkv or mp4 or webm or gif or mov
 		set fileFormat video
 	case png or jpg or jpeg or webp or avif
 		set fileFormat image
@@ -129,7 +129,7 @@ switch $fileFormat
 
 			# Delete the temporal wav file
 			if test -n "$needsConvert"
-				rm $converteeFilename $inputFilename[1].wav
+				rm $converteeFilename $inputFilename
 			end
 
 		else

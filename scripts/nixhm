@@ -1,56 +1,39 @@
 #!/usr/bin/env fish
 #TODO: Make it more elegant
-set -l flags "complete" "user" "system" "switch"
+set -l flags "complete" "switch"
 argparse $flags -- $argv
 
-# argv[0] -> action
+# argv[1] -> action
+# argv[2] -> level
+
+switch "$argv[2]"
+	case "user"
+		set level user
+		set flakeDirectory ~/.config/home-manager
+		set upgradeCommand home-manager switch
+	case "system"
+		set level system
+		set flakeDirectory /etc/nixos
+		set upgradeCommand sudo nixos-rebuild
+		if test -n "$_flag_switch"
+			set upgradeCommand $upgradeCommand switch
+		else
+			set upgradeCommand $upgradeCommand boot
+		end
+	case "complete"
+		nixhm $argv[1] user
+		nixhm $argv[1] system
+		exit 0
+end
 
 switch "$argv[1]"
 	case "changelog"
-		if test -n "$_flag_user"
-			_nixhm_changelog user
-		end
+		_nixhm_changelog $level
 
-		if test -n "$_flag_system"
-			_nixhm_changelog system
-		end
-
-		if test -n "$_flag_complete"
-			nixhm changelog --user
-			nixhm changelog --system
-		end
 	case "update"
-		if test -n "$_flag_user"
-			#TODO: Turn this into an envvar
-			cd $HOME/.config/home-manager
-		end
-		
-		if test -n "$_flag_system"
-			#TODO: Turn this into an envvar
-			cd $HOME/Documents/Programming/Repositories/pearsche-nixos-setup
-		end
-		if test -n "$_flag_complete"
-			nixhm update --user
-			nixhm update --system
-		else
-			nix flake update
-		end
+		cd $flakeDirectory
+		nix flake update
 
 	case "upgrade"
-		if test -n "$_flag_complete"
-			nixhm upgrade --user
-			nixhm upgrade --system "$_flag_switch"
-		end
-
-		if test -n "$_flag_user"
-			home-manager switch
-		end
-		
-		if test -n "$_flag_system"
-			if test -n "$_flag_switch"
-				sudo nixos-rebuild switch
-			else
-				sudo nixos-rebuild boot
-			end
-		end
+		$upgradeCommand
 end

@@ -13,7 +13,7 @@ else
 	set loops $_flag_loops
 end
 
-find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.$fileFormat -c copy {}.60fps+looped-$loops-times.$fileFormat \; -execdir optimize-media {}.60fps+looped-$loops-times.$fileFormat \;
+find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir optimize-media --videoQuality=40 --audioBitrare=1 {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.av1.mkv -c copy {}.60fps+looped-$loops-times.av1.mkv \;
 
 #while test $threads -gt 0 # actual compression process
 	#find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.$fileFormat -c copy {}.60fps+looped-$loops-times.$fileFormat \; -execdir optimize-media {}.60fps+looped-$loops-times.$fileFormat \; &

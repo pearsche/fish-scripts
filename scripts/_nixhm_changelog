@@ -1,6 +1,5 @@
 #!/usr/bin/env fish
 
-# Global counter
 
 # $argv[1] -> for whom the changelog is retrieved
 switch "$argv[1]"
