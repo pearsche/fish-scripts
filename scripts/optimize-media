@@ -129,7 +129,7 @@ switch $fileFormat
 
 			# Delete the temporal wav file
 			if test -n "$needsConvert"
-				rm $converteeFilename $inputFilename
+				rm $converteeFilename
 			end
 
 		else
@@ -211,7 +211,7 @@ switch $fileFormat
 			# round value
 			set videoFramerate[1] (math round $videoFramerate[1])
 			set videoFramerate (math -s 0 $videoFramerate[1] / $videoFramerate[2])
-			set keyframeArgs -g (math -s 0 $videoFramerate \* 4) -idr_interval:v (math -s 0 $videoFramerate \* 2) -keyint_min (math -s 0 $videoFramerate \* 1)
+			set keyframeArgs -g (math -s 0 $videoFramerate \* 6) -idr_interval:v (math -s 0 $videoFramerate \* 6) -keyint_min (math -s 0 $videoFramerate \* 1)
 		end
 
 		# TODO: Find a better way to handle colors.
@@ -236,6 +236,8 @@ switch $fileFormat
 				set videoFilter -vf scale_vaapi=mode=hq:force_original_aspect_ratio=1:format=p010:out_color_matrix=$colorSpace:out_range=$colorRange:out_color_primaries=$colorPrimaries:out_color_transfer=$colorTransfer:out_chroma_location=$chromaLocation,hwdownload,format=p010
 			else
 				set videoFilter -vf scale_vaapi=mode=hq:force_original_aspect_ratio=1:format=p010:out_color_matrix=$colorSpace:out_range=$colorRange:out_color_primaries=$colorPrimaries:out_color_transfer=$colorTransfer:out_chroma_location=$chromaLocation
+
+				#,hwmap=derive_device=qsv,format=qsv
 			end
 		end
 		# End of video area
@@ -308,7 +310,11 @@ switch $fileFormat
 			# TODO: Some videos crash i915
 			# TODO: Recognize if some videos don't have audio or have silent audio and if so, spit out a video without audio
 			# This is the command for HEVC VAAPI
-			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 -c:v hevc_vaapi $videoFilter -profile:v main10 $keyframeArgs -async_depth 4 -rc_mode:v ICQ -qp:v $qualityLevel -compression_level:v 7 -low_power 0 -bf:v 2 $audioFlags -c:s copy $outputFilename.$outputFormat		
+			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 -c:v hevc_vaapi $videoFilter -profile:v main10 $keyframeArgs -async_depth 6 -rc_mode:v CQP -qp:v $qualityLevel -low_power 1 -bf:v 3 -slices:v 4 $audioFlags -c:s copy $outputFilename.$outputFormat
+
+
+			#set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 $videoFilter -c:v hevc_qsv -async_depth 1 -look_ahead_depth:v 50 -preset 1 -low_power true -extbrc 1 -q:v $qualityLevel -rc_mode:v LA_CQP -tile_cols 2 -tile_rows 2 $audioFlags -c:s copy $outputFilename.$outputFormat
+
 		else
 			# AV1 CPU encoding, using SVT-AV1
 			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -threads auto -strict -2 -i $inputFilename[1].$inputFilename[2] -map 0 $videoFilter -pix_fmt yuv420p10le -c:v libsvtav1 -crf $qualityLevel $keyframeArgs -svtav1-params tune=0:tile-columns=2:tile-rows=2:preset=7 $audioFlags -c:s copy -dn "$outputFilename.$outputFormat"

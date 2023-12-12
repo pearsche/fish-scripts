@@ -21,8 +21,8 @@ switch "$argv[2]"
 			set upgradeCommand $upgradeCommand boot
 		end
 	case "complete"
-		nixhm $argv[1] user
 		nixhm $argv[1] system
+		nixhm $argv[1] user
 		exit 0
 end
 

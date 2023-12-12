@@ -23,3 +23,8 @@ switch "$argv[1]"
 	case general
 		aria2c -x 10 $argv[2]
 end
+
+if test (count $argv) -gt 2
+	set -e argv[2]
+	download $argv $_flag_lossless
+end
