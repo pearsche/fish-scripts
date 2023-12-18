@@ -1,0 +1,26 @@
+#!/usr/bin/env fish
+
+# $argv[1] -> action
+set action $argv[1]
+set -e argv[1]
+switch $action
+   case install
+      # Need to create a loop to get the optdepends of each package listed first
+      # argv contains the initial package list
+      set initial_package_list_count (count $argv)
+      # counter for the optdepends_to_install
+      set counter 1
+      while test $counter -gt $initial_package_list_count
+         set -g optdepends_to_install[$optdepends_counter] (_pacman_optdepends $argv[$counter])
+         set counter (math $counter + 1)
+      end
+
+      # need to add already checked packages to a list
+      # get optdepends of packages in optdepends_to_install
+
+      
+end
+
+# $argv -> package list
+
+

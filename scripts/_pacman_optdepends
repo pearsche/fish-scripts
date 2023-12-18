@@ -1,0 +1,44 @@
+#!/usr/bin/env fish
+
+# argv[1] == package to get optdepends from
+
+# Get package details
+set package_info (pacman -Si $argv[1])
+
+# Counter for optdepends
+set counterA -1
+
+# Get line number where "Optional Depends:" is
+while test "$check" != "Optional Deps"
+	set check (echo $package_info[$counterA] | grep -o "Optional Deps")
+	if test "$check" != "Optional Deps"
+		set counterA (math $counterA - 1)
+	end
+end
+
+# Counter for conflicts
+set counterB -1
+
+# Get line number where "Conflicts with:" is
+while test "$check" != "Conflicts With"
+	set check (echo $package_info[$counterB] | grep -o "Conflicts With")
+	if test "$check" != "Conflicts With"
+		set counterB (math $counterB - 1)
+	end
+end
+
+# Counter for the actual optdepends list
+# This counter is the length of the optdepends list
+set counter 1
+
+# we need to start from CounterA to CounterB
+while test $counterA -ne $counterB
+	set optdepends_list[$counter] (echo $package_info[$counterA] | sed 's/Optional Deps\s*:\s//g' | sed 's/\s*//g' | sed 's/:.*//g')
+	
+	set counterA (math $counterA + 1)
+	set counter (math $counter + 1)
+end
+
+if test "$optdepends_list" != "None"
+	echo $optdepends_list
+end

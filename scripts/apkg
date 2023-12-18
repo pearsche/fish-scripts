@@ -26,23 +26,6 @@
 				set cmd $cmd --needed
 			end
 
-			# While it sorta works, it takes too long, and, it picks packages I'd like to avoid
-			# Too high level perhaps, might create my own pacman + aur wrapper (by forking paru) or contributing the thing to paru
-			#while test $numPackages -gt 0
-			#	#echo $numPackages
-			#	#echo WE ARE STUCKA HERE
-			#	#echo $packageList[$numPackages]
-			#	set optPackagesToAdd (apkg packageinfo $packageList[$numPackages] | sed -n '/Optional Deps/,/Conflicts With/p' | sed \$d | sed "s/Optional Deps   : //" | sed "s/\s*//g" | sed "s/:.*\$//g")
-			#	if test "$optPackagesToAdd" != None
-			#		set optDepPackagesList $optPackagesToAdd $optDepPackagesList
-			#	end
-			#	#echo exiting while numpackages loop
-			#	#echo $optPackagesToAdd
-			#	set numPackages (math $numPackages - 1)
-			#end
-			#if test -n "$optPackagesToAdd"
-			#	apkg install --deps $optDepPackagesList
-			#end
 		case upgrade # Need to also install optional dependencies for upgrades!
 			# Workaround here, for some reason $packageList despite being unset, still gets added like if it did exist.
 			set cmd paru
