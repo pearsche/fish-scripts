@@ -15,11 +15,12 @@ set -l outputFilename $argv[2]
 set inputFilename (string split --right --max 1 \. $inputFilename)
 
 switch $inputFilename[2]
-	case mp3 or m4a or wv or wav or flac or ape
+	case mp3 or m4a or wv or wav or flac or ape or dsf
 		set fileFormat audio
-		if test $inputFilename[2] != wav
-			set needsConvert 1
-		end
+		# I use ffmpeg now
+		# if test $inputFilename[2] != wav
+		#	set needsConvert 1
+		# end
 	case mkv or mp4 or webm or gif or mov
 		set fileFormat video
 	case png or jpg or jpeg or webp or avif
@@ -44,100 +45,116 @@ switch $fileFormat
 				set outputFilename $outputFilename-optimized
 				set compressionLevel 12
 				set outputFormat flac
-				set compressionSettings -compression_level $compressionLevel
 			else
-				set compressionSettings -hh -x3
+				# Old, now I use ffmpeg
+				# set compressionSettings -hh -x3
+				set compressionLevel 3
 				set outputFormat wv
 			end
+		set compressionSettings -compression_level $compressionLevel
 		set audioFlags $compressionSettings
 
 		else # lossy audio
 			set outputFormat opus
-			set audioBitrate 160k
+			if test -z "$_flag_audioBitrate"
+				set audioBitrate 160k
+			else
+				set audioBitrate $_flag_audioBitrate\k
+			end
+
 			set audioFlags '-b:a' $audioBitrate # end of lossy audio section
 
 		end # end of audio setup
-		
+
 		# Actual conversion
-		if test $outputFormat = wv
+
+		# OLD: I use ffmpeg now.
+		# if test $outputFormat = wv
 			# Get the tags
-			set rawTags (ffprobe -show_entries format $converteeFilename | grep TAG)
+			# set rawTags (ffprobe -show_entries format $converteeFilename | grep TAG)
 
 			# Start counter
-			set counter 1
+			# set counter 1
 
 			# Number of tags
-			set numTags 0
+			# set numTags 0
 
 			# Count number of tags
-			while test -n "$rawTags[$counter]"
-				set counter (math $counter + 1)
-				set numTags (math $numTags + 1)
-			end
+			#while test -n "$rawTags[$counter]"
+			#	set counter (math $counter + 1)
+			#	set numTags (math $numTags + 1)
+			#end
 
 			# PING
 			# Remove TAG:
-			while test $numTags -gt 0
-				#echo PRE
-				#echo $rawTags[$numTags]
-				set rawTags[$numTags] (echo $rawTags[$numTags] | sed "s/TAG://g")
-				#echo POST
-				#echo $rawTags[$numTags]
-				set numTags (math $numTags - 1)
-			end
-			
+			#while test $numTags -gt 0
+			#	#echo PRE
+			#	#echo $rawTags[$numTags]
+			#	set rawTags[$numTags] (echo $rawTags[$numTags] | sed "s/TAG://g")
+			#	#echo POST
+			#	#echo $rawTags[$numTags]
+			#	set numTags (math $numTags - 1)
+			#end
+
 			# PONG
-			while test $numTags -lt (math $counter - 1)
+			#while test $numTags -lt (math $counter - 1)
 				# Split (removing the "=") and put the output in the final variable for tags, appending.
-				# Only read the first line. 
-				
-				set -a tagList (string split = $rawTags[1])
-				
+				# Only read the first line.
+
+			#	set -a tagList (string split = $rawTags[1])
+
 				# Delete the line we just read
-				set -e rawTags[1]
+			#	set -e rawTags[1]
 
 				# Increase the numTags
-				set numTags (math $numTags + 1)
-			end
+			#	set numTags (math $numTags + 1)
+			#end
 
 			# construct flag for the tags
-			while test $numTags -gt 0
-				set fieldName (math $numTags x 2 - 1)
-				set fieldValue (math $numTags x 2)
+			#while test $numTags -gt 0
+			#	set fieldName (math $numTags x 2 - 1)
+			#	set fieldValue (math $numTags x 2)
 
 				# Ignore the encoder tag that FFMPEG adds.
-				if test $tagList[$fieldName] != encoder
-					set -a tagsArgs -w $tagList[$fieldName]=$tagList[$fieldValue]
-				end
-				set numTags (math $numTags - 1)
-			end
+			#	if test $tagList[$fieldName] != encoder
+			#		set -a tagsArgs -w $tagList[$fieldName]=$tagList[$fieldValue]
+			#	end
+			#	set numTags (math $numTags - 1)
+			#end
 
+			# OLD: I use ffmpeg now.
 			# Add final tags settings
-			set -a tagsArgs --allow-huge-tags --import-id3 -w Encoder -w Settings
+			# set -a tagsArgs --allow-huge-tags --import-id3 -w Encoder -w Settings
 
+			# OLD: I use ffmpeg now.
 			# Append tagsArgs to $audioFlags
-			set -a audioFlags $tagsArgs
-			
+			# set -a audioFlags $tagsArgs
+
+			# OLD: I use ffmpeg now
 			# Convert file temporarily to wav
-			if test -n "$needsConvert"
-				ffmpeg -i $inputFilename[1].$inputFilename[2] $inputFilename[1].wav
-				set converteeFilename $inputFilename[1].wav
-			end
+			# if test -n "$needsConvert"
+			#	ffmpeg -i $inputFilename[1].$inputFilename[2] $inputFilename[1].wav
+			#	set converteeFilename $inputFilename[1].wav
+			#end
 
 			# Finally, the actual compression
-			wavpack $audioFlags $converteeFilename
+			# OLD: I use ffmpeg now.
+			#wavpack $audioFlags $converteeFilename
 
+			# OLD: I use ffmpeg now
 			# Delete the temporal wav file
-			if test -n "$needsConvert"
-				rm $converteeFilename
-			end
+			#if test -n "$needsConvert"
+			#	rm $converteeFilename
+			#end
 
-		else
-			ffmpeg $quietArgs -i $converteeFilename $audioFlags $outputFilename.$outputFormat 
-		end
+		# else
+			#ffmpeg $quietArgs -i $converteeFilename $audioFlags $outputFilename.$outputFormat
+		# end
+		ffmpeg $quietArgs -i $converteeFilename $audioFlags $outputFilename.$outputFormat
+
 
 	case video
-		# MKVs have "BPS" for both video and audio bitrate, MP4s have bit_rate. 
+		# MKVs have "BPS" for both video and audio bitrate, MP4s have bit_rate.
 		switch $inputFilename[2]
 			case "mkv" or "webm"
 				set bitrateField "TAG:BPS="
@@ -145,12 +162,12 @@ switch $fileFormat
 				set bitrateField "bit_rate="
 		end
 
-		
+
 
 		# Some mkv files don't have proper tags for bitrate and such, so fix them.
 		# Information gotten from https://www.reddit.com/r/ffmpeg/comments/nq5s39/is_there_any_easy_way_to_get_values_of_bitrate/h0c60d9/
 		# Was thinking of removing it, but it'd be better to just add a flag to skip this if necessary. The metadata that could be updated by that tool could be useful in ways I don't know yet.
-		
+
 		#if test -z "$_flag_skipMetadataHandling"
 		#	if test \( $inputFilename[2] = "mkv" -o $inputFilename[2] = "webm" \)
 		#		mkvpropedit $converteeFilename --add-track-statistics-tags > /dev/null 2>&1
@@ -165,18 +182,18 @@ switch $fileFormat
 		#		set corruptedFile 0
 		#	end
 		#end
-		
+
 		if test -n "$_flag_gpu"
 			set videoCodec hevc
 		else
 			set videoCodec av1
 		end
-		
+
 		set outputFilename $inputFilename[1].$videoCodec
 		set outputFormat mkv
 
 		# Video area
-		
+
 		# Get codec data
 		# This is to check if video is h264 10bit or gif (can't decode)
 		set originalCodec (ffprobe $converteeFilename -select_streams v:0 -show_streams 2>/dev/null | grep "codec_name=" | sed "s/codec_name=//g")
@@ -254,8 +271,8 @@ switch $fileFormat
 			set audioStreams (math $audioStreams - 1)
 			# https://www.reddit.com/r/ffmpeg/comments/v4s61h/correctly_mapping_51_to_opus/
 			set channel_layout (ffprobe $converteeFilename -select_streams a:$streamsHelper -show_streams 2>/dev/null | grep channel_layout= | sed "s/channel_layout=//g")
-			
-			
+
+
 			if test -n "$_flag_audioBitrate"
 				set audioBitrate $_flag_audioBitrate
 			else
@@ -272,7 +289,7 @@ switch $fileFormat
 
 			switch $channel_layout
 				case "5.1(side)" or "5.1(rear)" or "5.1"
-					set audioFlags $audioFlags -ac:a:$streamsHelper 6 
+					set audioFlags $audioFlags -ac:a:$streamsHelper 6
 					if test "$audioBitrate" -gt 512
 						set audioFlags $audioFlags -b:a:$streamsHelper 256k
 					else
@@ -293,7 +310,7 @@ switch $fileFormat
 						set audioFlags $audioFlags -b:a:$streamsHelper (math -s 0 $audioBitrate / 2)\k
 					end
 			end
-			
+
 			if test -n "$_flag_keepAudioBitrate"
 				set audioFlags[-1] $audioBitrate\k
 			end
@@ -310,14 +327,15 @@ switch $fileFormat
 			# TODO: Some videos crash i915
 			# TODO: Recognize if some videos don't have audio or have silent audio and if so, spit out a video without audio
 			# This is the command for HEVC VAAPI
-			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 -c:v hevc_vaapi $videoFilter -profile:v main10 $keyframeArgs -async_depth 6 -rc_mode:v CQP -qp:v $qualityLevel -low_power 1 -bf:v 3 -slices:v 4 $audioFlags -c:s copy $outputFilename.$outputFormat
+			#set convertCMD ffmpeg $quietArgs -extra_hw_frames 50 -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 -c:v hevc_vaapi $videoFilter -profile:v main10 $keyframeArgs -async_depth 6 -rc_mode:v CQP -qp:v $qualityLevel -low_power 1 -bf:v 3 -slices:v 4 $audioFlags -c:s copy $outputFilename.$outputFormat
+			set convertCMD ffmpeg $quietArgs -extra_hw_frames 50 -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename $videoFilter -map 0 -c:v hevc_vaapi -rc_mode:v CQP -qp:v $qualityLevel  $audioFlags -c:s copy $outputFilename.$outputFormat
 
 
 			#set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $converteeFilename -map 0 $videoFilter -c:v hevc_qsv -async_depth 1 -look_ahead_depth:v 50 -preset 1 -low_power true -extbrc 1 -q:v $qualityLevel -rc_mode:v LA_CQP -tile_cols 2 -tile_rows 2 $audioFlags -c:s copy $outputFilename.$outputFormat
 
 		else
 			# AV1 CPU encoding, using SVT-AV1
-			set convertCMD ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -threads auto -strict -2 -i $inputFilename[1].$inputFilename[2] -map 0 $videoFilter -pix_fmt yuv420p10le -c:v libsvtav1 -crf $qualityLevel $keyframeArgs -svtav1-params tune=0:tile-columns=2:tile-rows=2:preset=7 $audioFlags -c:s copy -dn "$outputFilename.$outputFormat"
+			set convertCMD  ffmpeg $quietArgs -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -threads auto -strict -2 -i $inputFilename[1].$inputFilename[2] -map 0 $videoFilter -pix_fmt yuv420p10le -c:v libsvtav1 -crf $qualityLevel $keyframeArgs -svtav1-params tune=0:tile-columns=2:tile-rows=2:preset=8 $audioFlags -c:s copy -dn "$outputFilename.$outputFormat"
 		end
 
 		# Actual Conversion
@@ -325,7 +343,7 @@ switch $fileFormat
 			echo $convertCMD
 		else
 			$convertCMD -loglevel verbose
-			
+
 			# Generate proper mkv tags for the resulting file
 			mkvpropedit $outputFilename.$outputFormat --add-track-statistics-tags > /dev/null 2>&1
 		end
@@ -343,20 +361,20 @@ switch $fileFormat
 			set converteeFilename $inputFilename[1]\-upscaled.png
 			set outputFilename $inputFilename[1]\-upscaled
 		end
-		
+
 		if test -n "$needsConvert"
 			echo $needsConvert
-			ffmpeg $quietArgs -i $inputFilename[1].$inputFilename[2] $inputFilename[1].tmp.png # create temporal png image
+			ffmpeg $quietArgs -i $inputFilename[1].$inputFilename[2] -update true $inputFilename[1].tmp.png # create temporal png image
 			set converteeFilename $inputFilename[1].tmp.png # set name to temporal png image
 			# set outputFilename $outputFilename.tmp # append tmp outputFilename to distinguish it from the original image
 		end
 
 		# Actual encoding
 		# Tested with a big image, and the defaults seem fine.
-		avifenc --jobs all --speed 0 --depth 10 --autotiling $converteeFilename $outputFilename.avif 
-		
+		avifenc --jobs all --speed 0 --depth 10 --autotiling $converteeFilename $outputFilename.avif
+
 		# Delete the temporal png image
 		if test -n "$needsConvert"
-			rm $converteeFilename 
+			rm $converteeFilename
 		end
 end

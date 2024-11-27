@@ -2,20 +2,24 @@
 set -l options 'loops=?' 'fileFormat=?'
 argparse $options -- $argv
 
-## splitFilelist --mode=move
-
-## set threads (nproc)
-set fileFormat $_flag_fileFormat
-
 if test -z "_flag_loops"
 	set loops 1
 else
 	set loops $_flag_loops
 end
 
-find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir optimize-media --videoQuality=40 --audioBitrate=1 {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.av1.mkv -c copy {}.60fps+looped-$loops-times.av1.mkv \;
+# This is single threaded
 
-#while test $threads -gt 0 # actual compression process
-	#find $threads/ -name \*.$fileFormat -execdir ffmpeg -i {} -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" {}.60fps.$fileFormat \; -execdir ffmpeg -stream_loop $loops -i {}.60fps.$fileFormat -c copy {}.60fps+looped-$loops-times.$fileFormat \; -execdir optimize-media {}.60fps+looped-$loops-times.$fileFormat \; &
-	#set threads (math $threads - 1)
-#end
+# Get file list
+set fileList (find -name \*.$_flag_fileFormat)
+
+# Remove the "./"
+set fileList (string trim --char="./" $fileList)
+
+for file in $fileList	
+	# Convert to 60 FPS
+	ffmpeg -i $file -crf 10 -vf "minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" $file.60fps.$_flag_fileFormat
+
+	# Loop it
+	ffmpeg -stream_loop $loops -i $file.60fps.$_flag_fileFormat -c copy $file.60fps.looped.$_flag_fileFormat
+end

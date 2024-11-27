@@ -1,0 +1,10 @@
+#!/usr/bin/env fish
+# set -l options ""
+# argparse $options -- $argv
+   if ls ~/.dmmm-mouse-fix-pid > /dev/null 2>&1
+      kill -9 (cat ~/.dmmm-mouse-fix-pid)
+      rm ~/.dmmm-mouse-fix-pid
+   else
+      watch -n0 ydotool mousemove -a -x 384 -y 240 > /dev/null 2>&1 &
+      jobs -lp > ~/.dmmm-mouse-fix-pid
+   end

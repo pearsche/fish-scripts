@@ -14,7 +14,7 @@ switch "$argv[2]"
 	case "system"
 		set level system
 		set flakeDirectory /etc/nixos
-		set upgradeCommand sudo nixos-rebuild
+		set upgradeCommand sudo nixos-rebuild --flake .#(hostname)
 		if test -n "$_flag_switch"
 			set upgradeCommand $upgradeCommand switch
 		else
@@ -35,5 +35,6 @@ switch "$argv[1]"
 		nix flake update
 
 	case "upgrade"
+		cd $flakeDirectory
 		$upgradeCommand
 end

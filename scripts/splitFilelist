@@ -30,7 +30,7 @@
 	if test -n "$folders" # numFolders to use
 		set numFolders $folders
 	else
-		set folders (nproc)
+		set folders (nproc --all)
 		set numFolders $folders
 	end
 

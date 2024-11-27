@@ -1,5 +1,5 @@
 #!/usr/bin/env fish
-set -l options 'mode=?'
+set -l options 'value='
 argparse $options -- $argv
 set bootComplete (systemctl is-active graphical.target)
 while test $bootComplete != "active"
@@ -7,22 +7,6 @@ while test $bootComplete != "active"
 	set bootComplete (systemctl is-active graphical.target)
 end
 
-if test -n "$_flag_mode"
-	if test "$_flag_mode" = "battery" -o "$_flag_mode" = "charger" -o "$_flag_mode" = "testing"
-		switch $_flag_mode
-			case battery
-				set preference balance_power
-			case charger
-				set preference balance_performance
-			case testing
-				set preference 160
-		end
-		echo $preference | tee /sys/devices/system/cpu/cpufreq/policy?/energy_performance_preference
-	else
-		echo "You need to provide a proper mode for this script to actually do something, either --mode=charger or --mode=battery."
-		return 1
-	end
-else
-	echo "You need to provide a mode for this script to actually do something, either --mode=charger or --mode=battery."
-	return 1
-end
+# value can be a number, or one of: power, balance-power, balance-performance, performance
+echo $_flag_value | sudo tee /sys/devices/system/cpu/cpufreq/policy?/energy_performance_preference
+
